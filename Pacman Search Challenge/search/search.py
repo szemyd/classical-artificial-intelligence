@@ -4,7 +4,7 @@
 # educational purposes provided that (1) you do not distribute or publish
 # solutions, (2) you retain this notice, and (3) you provide clear
 # attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
-# 
+#
 # Attribution Information: The Pacman AI projects were developed at UC Berkeley.
 # The core projects and autograders were primarily created by John DeNero
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
@@ -18,6 +18,7 @@ Pacman agents (in searchAgents.py).
 """
 
 import util
+
 
 class SearchProblem:
     """
@@ -70,7 +71,8 @@ def tinyMazeSearch(problem):
     from game import Directions
     s = Directions.SOUTH
     w = Directions.WEST
-    return  [s, s, w, s, w, w, s, w]
+    return [s, s, w, s, w, w, s, w]
+
 
 def depthFirstSearch(problem):
     """
@@ -87,17 +89,53 @@ def depthFirstSearch(problem):
     print "Start's successors:", problem.getSuccessors(problem.getStartState())
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    print(problem)
+    # print ("Start:", problem.getStartState())
+    # print ("Is the start a goal?", problem.isGoalState(problem.getStartState()))
+    # print ("Start's successors:", problem.getSuccessors(problem.getStartState()))
+
+    def dfs_recursion_start(start_node, search_value):
+        visited = set()               # Set to keep track of visited nodes.
+        return dfs_recursion(start_node, visited, search_value)
+
+    # Recursive function
+    def dfs_recursion(node, visited, search_value):
+        if node.value == search_value:
+            found = True              # Don't search in other branches, if found = True
+            return node
+
+        visited.add(node)
+        found = False
+        result = None
+
+        # Conditional recurse on each neighbour
+        for child in node.children:
+            if (child not in visited):
+                result = dfs_recursion(child, visited, search_value)
+
+                # Once the match is found, no more recurse
+                if found:
+                    break
+        return result
+
+    dfs_recursion_start({"value":problem.getStartState()}, "G")
+
+    # util.raiseNotDefined()
+
 
 def breadthFirstSearch(problem):
     """Search the shallowest nodes in the search tree first."""
     "*** YOUR CODE HERE ***"
+
+    print(problem)
     util.raiseNotDefined()
+
 
 def uniformCostSearch(problem):
     """Search the node of least total cost first."""
     "*** YOUR CODE HERE ***"
     util.raiseNotDefined()
+
 
 def nullHeuristic(state, problem=None):
     """
@@ -105,6 +143,7 @@ def nullHeuristic(state, problem=None):
     goal in the provided SearchProblem.  This heuristic is trivial.
     """
     return 0
+
 
 def aStarSearch(problem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
