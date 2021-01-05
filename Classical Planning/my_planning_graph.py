@@ -5,6 +5,7 @@ from aimacode.utils import expr
 
 from layers import BaseActionLayer, BaseLiteralLayer, makeNoOp, make_node
 
+# import textwrap
 
 class ActionLayer(BaseActionLayer):
 
@@ -20,7 +21,31 @@ class ActionLayer(BaseActionLayer):
         layers.ActionNode
         """
         # TODO: implement this function
-        raise NotImplementedError
+        # textwrap.dedent(actionA)
+        # print(actionA)
+        # print(actionB)
+
+        inconsistent_effect=False
+        # print("________")
+        # print(actionA)
+        # print(self.children[actionA])
+        # print(actionB)
+        # print(self.children[actionB])
+       
+        # raise SystemExit(actionA)
+
+        for effect in self.children[actionA]:
+            for effectB in self.children[actionB]:
+                if effect == ~effectB: 
+                    inconsistent_effect = True
+                if ~effect == effectB:
+                    inconsistent_effect = True
+
+        # print(inconsistent_effect)
+        # print("________")
+
+        return inconsistent_effect
+        # raise NotImplementedError
 
 
     def _interference(self, actionA, actionB):
@@ -72,7 +97,9 @@ class LiteralLayer(BaseLiteralLayer):
     def _negation(self, literalA, literalB):
         """ Return True if two literals are negations of each other """
         # TODO: implement this function
-        raise NotImplementedError
+
+        return literalA == ~literalB
+        # raise NotImplementedError
 
 
 class PlanningGraph:
