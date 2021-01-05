@@ -26,6 +26,9 @@ class Action:
         self.effect_add = set(effect[0])
         self.effect_rem = set(effect[1])
 
+    def __str__(self):
+        return "From str method of Test: name is %s, args is %s" % (self.name, self.args)
+
     def __call__(self, kb, args):
         return self.act(kb, args)
 

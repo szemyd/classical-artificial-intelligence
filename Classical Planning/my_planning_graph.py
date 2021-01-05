@@ -60,7 +60,28 @@ class ActionLayer(BaseActionLayer):
         layers.ActionNode
         """
         # TODO: implement this function
-        raise NotImplementedError
+        interference = False
+        print("________")
+
+        print("Action A effects: ", self.children[actionA])
+        print("Action B preconditions: ", self.parents[actionB])
+
+        for effect in self.children[actionA]: # effects
+            if ~effect in self.parents[actionB]: # preconditions
+                interference = True
+
+        print("Action B effects: ", self.children[actionB])
+        print("Action A preconditions: ", self.parents[actionA])
+
+        for effect in self.children[actionB]: # effects
+            if ~effect in self.parents[actionA]: # preconditions
+                interference = True
+
+        print(interference)
+
+        print("________")
+
+        return interference
 
     def _competing_needs(self, actionA, actionB):
         """ Return True if any preconditions of the two actions are pairwise mutex in the parent layer
@@ -75,7 +96,8 @@ class ActionLayer(BaseActionLayer):
         layers.BaseLayer.parent_layer
         """
         # TODO: implement this function
-        raise NotImplementedError
+        print("NOT IMPLEMENTED YET")
+        # raise NotImplementedError
 
 
 class LiteralLayer(BaseLiteralLayer):
