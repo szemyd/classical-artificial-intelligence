@@ -109,9 +109,9 @@ class ActionLayer(BaseActionLayer):
         competing_needs = False
         for precondA in self.parents[actionA]:
             for precondB in self.parents[actionB]:
-                if self.parent_layer.is_mutex(actionA,actionB):
+                if self.parent_layer.is_mutex(precondA,precondB):
                     competing_needs = True
-                if self.parent_layer.is_mutex(actionB,actionA):
+                if self.parent_layer.is_mutex(precondB,precondA):
                     competing_needs = True
 
         # print(competing_needs)
@@ -135,14 +135,14 @@ class LiteralLayer(BaseLiteralLayer):
         """
         # TODO: implement this function
 
-        inconsitent_support = False
+        inconsitent_support = True
 
         for actionA in self.parents[literalA]:
             for actionB in self.parents[literalB]:
-                if self.parent_layer.is_mutex(actionA, actionB):
-                    inconsitent_support = True
-                if self.parent_layer.is_mutex(actionB, actionA):
-                    inconsitent_support = True
+                if self.parent_layer.is_mutex(actionA, actionB) is False:
+                    inconsitent_support = False
+                if self.parent_layer.is_mutex(actionB, actionA) is False:
+                    inconsitent_support = False
 
         return inconsitent_support
 
