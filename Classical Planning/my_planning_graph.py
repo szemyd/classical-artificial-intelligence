@@ -109,9 +109,9 @@ class ActionLayer(BaseActionLayer):
         competing_needs = False
         for precondA in self.parents[actionA]:
             for precondB in self.parents[actionB]:
-                if self.parent_layer.is_mutex(precondA,precondB):
+                if self.parent_layer.is_mutex(precondA, precondB):
                     competing_needs = True
-                if self.parent_layer.is_mutex(precondB,precondA):
+                if self.parent_layer.is_mutex(precondB, precondA):
                     competing_needs = True
 
         # print(competing_needs)
@@ -146,14 +146,11 @@ class LiteralLayer(BaseLiteralLayer):
 
         return inconsitent_support
 
-        # raise NotImplementedError
-
     def _negation(self, literalA, literalB):
         """ Return True if two literals are negations of each other """
         # TODO: implement this function
 
         return literalA == ~literalB
-        # raise NotImplementedError
 
 
 class PlanningGraph:
@@ -193,6 +190,11 @@ class PlanningGraph:
         self.literal_layers = [layer]
         self.action_layers = []
 
+    def level_cost(self, goal):
+        for index, layer in enumerate(self.literal_layers):
+            if goal in layer:
+                return index
+
     def h_levelsum(self):
         """ Calculate the level sum heuristic for the planning graph
 
@@ -219,7 +221,13 @@ class PlanningGraph:
         Russell-Norvig 10.3.1 (3rd Edition)
         """
         # TODO: implement this function
-        raise NotImplementedError
+        costs = []
+        self.fill()
+
+        for goal in self.goal:
+            costs.append(self.level_cost(goal))
+
+        return sum(costs)
 
     def h_maxlevel(self):
         """ Calculate the max level heuristic for the planning graph
@@ -249,7 +257,16 @@ class PlanningGraph:
         WARNING: you should expect long runtimes using this heuristic with A*
         """
         # TODO: implement maxlevel heuristic
-        raise NotImplementedError
+
+        costs = []
+
+        self.fill()
+
+        for goal in self.goal:
+            costs.append(self.level_cost(goal))
+
+        return max(costs)
+
 
     def h_setlevel(self):
         """ Calculate the set level heuristic for the planning graph
@@ -274,7 +291,32 @@ class PlanningGraph:
         WARNING: you should expect long runtimes using this heuristic on complex problems
         """
         # TODO: implement setlevel heuristic
-        raise NotImplementedError
+
+        self.fill()
+
+       
+
+        for index, layer in enumerate(self.literal_layers):
+            allGoalsMet = True
+
+            for goal in self.goal:
+                if goal not in layer:
+                    allGoalsMet = False
+
+            if allGoalsMet: 
+                goalsAreMutex = False
+
+                for goalA in self.goal:
+                    for goalB in self.goal:
+                        if layer.is_mutex(goalA, goalB):
+                            goalsAreMutex = True
+
+                if not goalsAreMutex:
+                    return index
+                    # print("valid")
+                # else: print("not valid")
+
+        # return layer_index
 
     ##############################################################################
     #                     DO NOT MODIFY CODE BELOW THIS LINE                     #
