@@ -39,8 +39,8 @@ class ActionLayer(BaseActionLayer):
             for effectB in self.children[actionB]:
                 if effect == ~effectB:
                     inconsistent_effect = True
-                if ~effect == effectB:
-                    inconsistent_effect = True
+                # if ~effect == effectB:
+                #     inconsistent_effect = True
 
         # print(inconsistent_effect)
         # print("________")
@@ -111,8 +111,8 @@ class ActionLayer(BaseActionLayer):
             for precondB in self.parents[actionB]:
                 if self.parent_layer.is_mutex(precondA, precondB):
                     competing_needs = True
-                if self.parent_layer.is_mutex(precondB, precondA):
-                    competing_needs = True
+                # if self.parent_layer.is_mutex(precondB, precondA):
+                #     competing_needs = True
 
         # print(competing_needs)
         # print("________")
@@ -141,15 +141,13 @@ class LiteralLayer(BaseLiteralLayer):
             for actionB in self.parents[literalB]:
                 if self.parent_layer.is_mutex(actionA, actionB) is False:
                     inconsitent_support = False
-                if self.parent_layer.is_mutex(actionB, actionA) is False:
-                    inconsitent_support = False
+                # if self.parent_layer.is_mutex(actionB, actionA) is False:
+                #     inconsitent_support = False
 
         return inconsitent_support
 
     def _negation(self, literalA, literalB):
         """ Return True if two literals are negations of each other """
-        # TODO: implement this function
-
         return literalA == ~literalB
 
 
@@ -221,13 +219,36 @@ class PlanningGraph:
         Russell-Norvig 10.3.1 (3rd Edition)
         """
         # TODO: implement this function
+        # costs = []
+        # self.fill()
+
+        # for goal in self.goal:
+        #     costs.append(self.level_cost(goal))
+
+        # return sum(costs)
+
+        levelToCheck = 0
         costs = []
-        self.fill()
+        goalsChecked = []
 
-        for goal in self.goal:
-            costs.append(self.level_cost(goal))
+        while not self._is_leveled:
+            allGoalsMet = True
+            
+            for goal in self.goal:
+                if goal not in self.literal_layers[levelToCheck]:
+                    allGoalsMet = False
+                elif goal not in goalsChecked:
+                    costs.append(self.level_cost(goal))
+                    goalsChecked.append(goal)
 
-        return sum(costs)
+            if allGoalsMet:
+                return sum(costs)
+            else: self._extend()
+
+            levelToCheck += 1
+
+
+
 
     def h_maxlevel(self):
         """ Calculate the max level heuristic for the planning graph
@@ -258,14 +279,22 @@ class PlanningGraph:
         """
         # TODO: implement maxlevel heuristic
 
-        costs = []
+        levelToCheck = 0
 
-        self.fill()
+        while not self._is_leveled:
+            allGoalsMet = True
+            
+            for goal in self.goal:
+                if goal not in self.literal_layers[levelToCheck]:
+                    allGoalsMet = False
 
-        for goal in self.goal:
-            costs.append(self.level_cost(goal))
+            if allGoalsMet:
+                return levelToCheck ##max(costs)
+            else: self._extend()
 
-        return max(costs)
+            levelToCheck += 1
+
+        
 
 
     def h_setlevel(self):
@@ -292,26 +321,51 @@ class PlanningGraph:
         """
         # TODO: implement setlevel heuristic
 
-        self.fill()
+        # self.fill()
 
-        for index, layer in enumerate(self.literal_layers):
+        # for index, layer in enumerate(self.literal_layers):
+        #     allGoalsMet = True
+
+        #     for goal in self.goal:
+        #         if goal not in layer:
+        #             allGoalsMet = False
+
+        #     if allGoalsMet: 
+        #         goalsAreMutex = False
+
+        #         for goalA in self.goal:
+        #             for goalB in self.goal:
+        #                 if layer.is_mutex(goalA, goalB):
+        #                     goalsAreMutex = True
+
+        #         if not goalsAreMutex:
+        #             return index
+
+
+        levelToCheck = 0
+
+        while not self._is_leveled:
             allGoalsMet = True
-
+            
             for goal in self.goal:
-                if goal not in layer:
+                if goal not in self.literal_layers[levelToCheck]:
                     allGoalsMet = False
+
 
             if allGoalsMet: 
                 goalsAreMutex = False
 
                 for goalA in self.goal:
                     for goalB in self.goal:
-                        if layer.is_mutex(goalA, goalB):
+                        if self.literal_layers[levelToCheck].is_mutex(goalA, goalB):
                             goalsAreMutex = True
 
                 if not goalsAreMutex:
-                    return index
+                    return levelToCheck
+                else: self._extend()
+            else: self._extend()
 
+            levelToCheck += 1
 
     ##############################################################################
     #                     DO NOT MODIFY CODE BELOW THIS LINE                     #
