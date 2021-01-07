@@ -11,12 +11,13 @@ class PrintableProblem(InstrumentedProblem):
     """ InstrumentedProblem keeps track of stats during search, and this class
     modifies the print output of those statistics for air cargo problems.
     """
+
     def __repr__(self):
         return '{:^10d}  {:^10d}  {:^10d}  {:^10d}'.format(
             len(self.problem.actions_list), self.succs, self.goal_tests, self.states)
 
 
-def run_search(problem, search_function, parameter=None):
+def run_search(pname, sname, heuristic, problem, search_function, parameter=None):
     ip = PrintableProblem(problem)
     start = timer()
     if parameter is not None:
@@ -27,13 +28,32 @@ def run_search(problem, search_function, parameter=None):
     print("\n# Actions   Expansions   Goal Tests   New Nodes")
     print("{}\n".format(ip))
     show_solution(node, end - start)
+
+    writeToCsv(
+        str(pname) + 
+    "," + str(sname)+ 
+    "," + str(heuristic)+ 
+    "," + str(len(ip.problem.actions_list)) + 
+    "," + str(ip.succs) + 
+    "," + str(ip.goal_tests) + 
+    "," + str(ip.states)+
+    "," + str(end - start)+
+    "," + str(len(node.solution()))+
+    '\n')
+
     print()
 
 
 def show_solution(node, elapsed_time):
-    print("Plan length: {}  Time elapsed in seconds: {}".format(len(node.solution()), elapsed_time))
-    for action in node.solution():
-        print("{}{}".format(action.name, action.args))
+    print("Plan length: {}  Time elapsed in seconds: {}".format(
+        len(node.solution()), elapsed_time))
+    # for action in node.solution():
+    #     print("{}{}".format(action.name, action.args))
+
+
+def writeToCsv(myCsvRow):
+    with open('search_diagnostic.csv', 'a') as fd:
+        fd.write(myCsvRow)
 
 
 def create_expressions(str_list):
@@ -52,7 +72,7 @@ def make_relations(name, *args, key=lambda x: True):
 
     Example
     -------
-    
+
     >>> make_relations("At", ["Cargo1", "PlaneA"], ["Airport1"])
 
         [expr(At(Cargo1, Airport1)), expr(At(PlaneA, Airport1))]
@@ -70,6 +90,7 @@ def make_relations(name, *args, key=lambda x: True):
 
 class FluentState:
     """ Represent planning problem states as positive and negative fluents """
+
     def __init__(self, pos_list, neg_list):
         self.pos = list(pos_list)
         self.neg = list(neg_list)
@@ -122,7 +143,7 @@ def encode_state(fs, fluent_map):
 
     fluent_map:
         An ordered sequence of fluents
-    
+
     Returns
     -------
     tuple of True/False elements corresponding to the fluents in fluent_map

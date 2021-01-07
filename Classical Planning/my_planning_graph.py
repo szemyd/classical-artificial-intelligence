@@ -294,8 +294,6 @@ class PlanningGraph:
 
         self.fill()
 
-       
-
         for index, layer in enumerate(self.literal_layers):
             allGoalsMet = True
 
@@ -313,10 +311,7 @@ class PlanningGraph:
 
                 if not goalsAreMutex:
                     return index
-                    # print("valid")
-                # else: print("not valid")
 
-        # return layer_index
 
     ##############################################################################
     #                     DO NOT MODIFY CODE BELOW THIS LINE                     #

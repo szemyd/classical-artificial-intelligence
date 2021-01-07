@@ -77,7 +77,7 @@ def main(p_choices, s_choices):
 
             problem_instance = problem_fn()
             heuristic_fn = None if not heuristic else getattr(problem_instance, heuristic)
-            run_search(problem_instance, search_fn, heuristic_fn)
+            run_search(pname, sname, heuristic, problem_instance, search_fn, heuristic_fn)
 
 
 if __name__=="__main__":
