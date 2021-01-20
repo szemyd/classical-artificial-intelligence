@@ -1,0 +1,15 @@
+search type,heuristic,win ratio,number of rounds,opponent,opponent heuristic,search depth,fair,parallel
+Alpha-Beta Search,movesDelta,55%,20,Alpha-Beta Search,my_moves,5,false,1
+Alpha-Beta Search,movesDelta,0%,20,Alpha-Beta Search,liberty_difference,4,false,1
+Alpha-Beta Search,liberty_difference,66.7%,6,Alpha-Beta Search,liberty_difference,4,false,1
+Alpha-Beta Search,liberty_difference,33.3%,6,Alpha-Beta Search,liberty_difference,4,false,1
+Alpha-Beta Search,liberty_difference,45.0%,20,Alpha-Beta Search,liberty_difference,4,false,1
+Alpha-Beta Search,weighted_self,50%,6,Alpha-Beta Search,liberty_difference,4,false,1
+Alpha-Beta Search,weighted_self,95%,20,Alpha-Beta Search,liberty_difference,5,false,1
+Alpha-Beta Search,weighted_self,70%,40,Alpha-Beta Search,liberty_difference,5,true,4
+Alpha-Beta Search,weighted_self,40.8%,120,Alpha-Beta Search,liberty_difference,5,true,10
+Alpha-Beta Search,weighted_opp,42.5%,120,Alpha-Beta Search,liberty_difference,5,true,10
+Alpha-Beta Search,liberty_difference,47.5%,120,Alpha-Beta Search,liberty_difference,5,true,10
+Alpha-Beta Search,weighted_linear_function,44.2%,120,Alpha-Beta Search,liberty_difference,5,true,10
+Alpha-Beta Search,weighted_binary,56.7%,120,Alpha-Beta Search,liberty_difference,5,true,10
+Alpha-Beta Search,weighted_relu,50.8%,120,Alpha-Beta Search,liberty_difference,5,true,10

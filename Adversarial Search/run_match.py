@@ -12,7 +12,7 @@ from collections import namedtuple
 from multiprocessing.pool import ThreadPool as Pool
 
 from isolation import Isolation, Agent, play
-from sample_players import RandomPlayer, GreedyPlayer, MinimaxPlayer
+from sample_players import RandomPlayer, GreedyPlayer, MinimaxPlayer, CustomOpponent
 from my_custom_player import CustomPlayer
 
 logger = logging.getLogger(__name__)
@@ -25,6 +25,7 @@ TEST_AGENTS = {
     "RANDOM": Agent(RandomPlayer, "Random Agent"),
     "GREEDY": Agent(GreedyPlayer, "Greedy Agent"),
     "MINIMAX": Agent(MinimaxPlayer, "Minimax Agent"),
+    "CUSTOM": Agent(CustomOpponent, "Custom Opponent"),
     "SELF": Agent(CustomPlayer, "Custom TestAgent")
 }
 

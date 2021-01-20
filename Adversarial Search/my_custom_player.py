@@ -5,6 +5,11 @@ from isolation import DebugState
 
 import random
 import time
+import math
+
+_WIDTH = 11
+_HEIGHT = 9
+_BOARDSIZE= _WIDTH * _HEIGHT
 
 
 class CustomPlayer(DataPlayer):
@@ -29,8 +34,13 @@ class CustomPlayer(DataPlayer):
         self.player_id = player_id
         self.start_time = None
         self.max_time = 140  # in miliseconds
-        self.depth_limit = 10
+        self.depth_limit = 5
         self.timertest_off = True
+
+        self.my_moves_prev = 0
+        self.opp_moves_prev = 0
+
+        # print("NEW GAME")
 
     def get_action(self, state):
         """ Employ an adversarial search technique to choose an action
@@ -58,6 +68,7 @@ class CustomPlayer(DataPlayer):
         #
 
         # For Debugging
+
         # print('In get_action(), state received:')
         # debug_board = DebugState.from_state(state)
         # print(debug_board)
@@ -102,6 +113,7 @@ class CustomPlayer(DataPlayer):
         else:
             return False
 
+    ## MINIMAX ##
     def minimax(self, state, depth):
         """ Return the move along a branch of the game tree that
         has the best possible value.  A move is a pair of coordinates
@@ -123,10 +135,6 @@ class CustomPlayer(DataPlayer):
                 best_move = a
         return best_move
 
-    def my_moves(self, state):
-        player_location = state.locs[self.player_id]
-        return len(state.liberties(player_location))
-
     def min_value(self, state, depth):
         """ Return the value for a win (+1) if the game is over,
         otherwise return the minimum value over all legal child
@@ -135,8 +143,8 @@ class CustomPlayer(DataPlayer):
         if state.terminal_test():
             return state.utility(self.player_id)
 
-        if depth <= 0 or self.timertest():
-            return self.my_moves(state)
+        if depth <= 0:  # or self.timertest():
+            return self.score(state, self.player_id)
 
         v = float("inf")
         for a in state.actions():
@@ -151,14 +159,15 @@ class CustomPlayer(DataPlayer):
         if state.terminal_test():
             return state.utility(self.player_id)
 
-        if depth <= 0 or self.timertest():
-            return self.my_moves(state)
+        if depth <= 0:  # self.timertest():
+            return self.score(state, self.player_id)
 
         v = float("-inf")
         for a in state.actions():
             v = max(v, self.min_value(state.result(a), depth - 1))
         return v
 
+    ## ALPHA-BETA ##
     def alpha_beta_search(self, state, depth):
         """ Return the move along a branch of the game tree that
         has the best possible value.  A move is a pair of coordinates
@@ -188,8 +197,8 @@ class CustomPlayer(DataPlayer):
         if state.terminal_test():
             return state.utility(self.player_id)
 
-        if depth <= 0 or self.timertest():
-            return self.my_moves(state)
+        if depth <= 0:  # self.timertest():
+            return self.score(state, self.player_id)
 
         v = float("inf")
         for a in state.actions():
@@ -209,8 +218,8 @@ class CustomPlayer(DataPlayer):
         if state.terminal_test():
             return state.utility(self.player_id)
 
-        if depth <= 0 or self.timertest():
-            return self.my_moves(state)
+        if depth <= 0:  # self.timertest():
+            return self.score(state, self.player_id)
 
         v = float("-inf")
         for a in state.actions():
@@ -221,3 +230,85 @@ class CustomPlayer(DataPlayer):
             alpha = max(alpha, v)
 
         return v
+
+    ## HEURISTICS ##
+
+    def score(self, state, player):
+        return self.weighted_relu(state, player)
+
+    def liberty_difference(self, state, player):
+        own_loc = state.locs[player]
+        opp_loc = state.locs[1 - player]
+        own_liberties = state.liberties(own_loc)
+        opp_liberties = state.liberties(opp_loc)
+        return len(own_liberties) - len(opp_liberties)
+
+    def num_moves(self, state, player):
+        player_location = state.locs[player]
+        return len(state.liberties(player_location))
+
+    def movesDelta(self, state, player):
+        # This function returns the difference between the amount of change
+        # in number of available actions for player minus the opponent.
+        # If this number is positive that means the player is moving into positions with bigger 'optionality',
+        # if it's negative that means the opponent has a better move tendency
+
+        myMoves = self.num_moves(state, player)
+        oppMoves = self.num_moves(state, abs(player - 1))
+
+        dMyMoves = myMoves - self.my_moves_prev
+        dOpponentMoves = oppMoves - self.opp_moves_prev
+
+        self.my_moves_prev = myMoves
+        self.opp_moves_prev = oppMoves
+
+        return dMyMoves - dOpponentMoves
+
+    def liberties_of_liberties(self, state, player):  # Takes too long
+        own_loc = state.locs[player]
+        opp_loc = state.locs[1 - player]
+        own_liberties = state.liberties(own_loc)
+        opp_liberties = state.liberties(opp_loc)
+
+        my_next_step_liberties = 0
+        opp_next_step_liberties = 0
+        for loc in own_liberties:
+            my_next_step_liberties += len(state.liberties(loc))
+        for loc in opp_liberties:
+            opp_next_step_liberties += len(state.liberties(loc))
+
+        return my_next_step_liberties - opp_next_step_liberties
+
+    def weighted_self(self, state, player):
+        return math.pow(self.num_moves(state, player), 2) - self.num_moves(state, player - 1)
+
+    def weighted_opp(self, state, player):
+        return self.num_moves(state, player) - math.pow(self.num_moves(state, player - 1), 2)
+
+    def weighted_linear_function(self, state, player):
+
+        # this goes from 0 -> as 1 as the game progresses
+        progress = state.ply_count/_BOARDSIZE
+
+        w1, w2 = progress, 1 - progress
+ 
+        return w1 * self.weighted_self(state, player) + w2 * self.weighted_opp(state, player) 
+
+    def weighted_relu(self, state, player):
+
+        # this goes from 0 -> as 1 as the game progresses
+        progress = state.ply_count/_BOARDSIZE
+
+        w1, w2 = self.rectified((progress * 2) - 1 ), self.rectified(1 - (progress * 4)) 
+ 
+        return w1 * self.weighted_self(state, player) + w2 * self.weighted_opp(state, player) + self.num_moves(state, player)
+
+    def weighted_binary(self, state, player):
+
+        # this goes from 0 -> as 1 as the game progresses
+        progress = state.ply_count/_BOARDSIZE
+
+        return self.weighted_opp(state, player) if progress <= 0.5 else self.weighted_self(state,player)
+
+    def rectified(self, num):
+        return max(0.0, num)
