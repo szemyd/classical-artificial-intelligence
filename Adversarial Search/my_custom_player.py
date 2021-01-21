@@ -12,7 +12,7 @@ _HEIGHT = 9
 _BOARDSIZE= _WIDTH * _HEIGHT
 
 
-class CustomPlayer(DataPlayer):
+class CustomPlayer2(DataPlayer):
     """ Implement your own agent to play knight's Isolation
 
     The get_action() method is the only required method for this project.
@@ -312,3 +312,100 @@ class CustomPlayer(DataPlayer):
 
     def rectified(self, num):
         return max(0.0, num)
+
+
+class CustomPlayer(DataPlayer):
+    """ Implement your own agent to play knight's Isolation
+
+    The get_action() method is the only required method for this project.
+    You can modify the interface for get_action by adding named parameters
+    with default values, but the function MUST remain compatible with the
+    default interface.
+
+    **********************************************************************
+    NOTES:
+    - The test cases will NOT be run on a machine with GPU access, nor be
+      suitable for using any other machine learning techniques.
+
+    - You can pass state forward to your agent on the next turn by assigning
+      any pickleable object to the self.context attribute.
+    **********************************************************************
+    """
+
+    def __init__(self, player_id):
+        self.player_id = player_id
+        self.max_time = 140  # in miliseconds
+        self.iteration_limit = 10000
+
+    def get_action(self, state):
+        """ Employ an adversarial search technique to choose an action
+        available in the current state calls self.queue.put(ACTION) at least
+
+        This method must call self.queue.put(ACTION) at least once, and may
+        call it as many times as you want; the caller will be responsible
+        for cutting off the function after the search time limit has expired.
+
+        See RandomPlayer and GreedyPlayer in sample_players for more examples.
+
+        **********************************************************************
+        NOTE: 
+        - The caller is responsible for cutting off search, so calling
+          get_action() from your own code will create an infinite loop!
+          Refer to (and use!) the Isolation.play() function to run games.
+        **********************************************************************
+        """
+        # TODO: Replace the example implementation below with your own search
+        #       method by combining techniques from lecture
+        #
+        # EXAMPLE: choose a random move without any search--this function MUST
+        #          call self.queue.put(ACTION) at least once before time expires
+        #          (the timer is automatically managed for you)
+        #
+
+        ## For Debugging
+
+        # print('In get_action(), state received:')
+        # debug_board = DebugState.from_state(state)
+        # print(debug_board)
+
+        ## Monte Carlo ##
+
+        root = state
+
+        
+
+
+        for depth in range(self.iteration_limit):
+            leaf = self.select(state) ## selecting a leaf node which has no children yet or which has 
+            if(leaf != state): ## if state is not terminal (we have found a valid child leaf)
+                child = self.expand(leaf) ## should return a state
+                result = self.simulate(child) ## should return a result
+                self.backpropagate(result, child) ## updates the parent nodes according to the result
+            self.queue.put(self.choose_best(result))
+
+        def select(self, state):
+
+            if state.terminal_test(): return state
+
+            if len(state.children) > 0:
+                return self.select(max(state.children, key=uct))
+
+            else: 
+                state["children"] = state.actions()
+                return random.choice(state.children)
+
+
+        def expand(self, leaf):
+            pass
+
+        def simulate(self, child):
+            pass
+        
+        def choose_best(self, result):
+            pass
+
+        def backpropagate(self, result, child):
+            pass
+
+        def uct(self, state):
+            pass
