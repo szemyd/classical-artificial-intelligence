@@ -314,31 +314,27 @@ class CustomPlayer2(DataPlayer):
     def rectified(self, num):
         return max(0.0, num)
 
+
 class TreeNode():
-    def __init__(self):
-        self.parent = None
+    def __init__(self, state, parent, origin_action):
+        self.parent = parent 
+        self.state = state
         self.children = []
+        
         self.uct = 0
         self.win_count = 0
-        self.num_count = 0
+        self.sim_count = 0
+
+        self.origin_action = origin_action
+
+    def __str__(self):
+        return "My State is: " + str(self.state) + " \n \t children are: " + str(len(self.children)) + " \n \t UCT: " + str(self.uct)
+
+    def init_children(self):
+        self.children = [TreeNode(self.state.result(x), self, x) for x in self.state.actions()]
+
 
 class CustomPlayer(DataPlayer):
-    """ Implement your own agent to play knight's Isolation
-
-    The get_action() method is the only required method for this project.
-    You can modify the interface for get_action by adding named parameters
-    with default values, but the function MUST remain compatible with the
-    default interface.
-
-    **********************************************************************
-    NOTES:
-    - The test cases will NOT be run on a machine with GPU access, nor be
-      suitable for using any other machine learning techniques.
-
-    - You can pass state forward to your agent on the next turn by assigning
-      any pickleable object to the self.context attribute.
-    **********************************************************************
-    """
 
     def __init__(self, player_id):
         self.player_id = player_id
@@ -346,57 +342,110 @@ class CustomPlayer(DataPlayer):
         self.iteration_limit = 10000
         self.exploration_weight = 1.4  # usually it is sqrt of 2
 
+
     def get_action(self, state):
-        """ Employ an adversarial search technique to choose an action
-        available in the current state calls self.queue.put(ACTION) at least
 
-        This method must call self.queue.put(ACTION) at least once, and may
-        call it as many times as you want; the caller will be responsible
-        for cutting off the function after the search time limit has expired.
+        ## For Debugging ##
 
-        See RandomPlayer and GreedyPlayer in sample_players for more examples.
-
-        **********************************************************************
-        NOTE: 
-        - The caller is responsible for cutting off search, so calling
-          get_action() from your own code will create an infinite loop!
-          Refer to (and use!) the Isolation.play() function to run games.
-        **********************************************************************
-        """
-        # TODO: Replace the example implementation below with your own search
-        #       method by combining techniques from lecture
-        
-        # EXAMPLE: choose a random move without any search--this function MUST
-        #          call self.queue.put(ACTION) at least once before time expires
-        #          (the timer is automatically managed for you)
-        #
-
-        # For Debugging
-
-        # print('In get_action(), state received:')
-        # debug_board = DebugState.from_state(state)
-        # print(debug_board)
+        print('In get_action(), state received:')
+        debug_board = DebugState.from_state(state)
+        print(debug_board)
 
         ## Monte Carlo ##
-        # tree_node = TreeNode()
 
-        for _ in range(self.iteration_limit):
-            print("Iteration number: ", _)
-            # selecting a leaf node which has no children yet or which has
-            leaf = self.select(state, None)
-            if(leaf != state):  # if state is not terminal (we have found a valid child leaf)
-                result = self.simulate(leaf)  # should return a result
+        self.montecarlo(state)
 
-                self.backpropagate(result, leaf) # updates the parent nodes according to the result        
-            self.queue.put(self.choose_best(state))
+    def montecarlo(self, state):
+        
+        def run_search():
+            t = TreeNode(state, None, None)
+            t.init_children()
 
-    def select(self, leaf, parent): ## Leaf is a state
+            for _ in range(self.iteration_limit):
+                leaf = select(t)
+
+                if(leaf != state): 
+                    result = simulate(leaf.state)
+                    backpropagate(result, leaf)
+                    print(leaf.sim_count, end =' ')
+                best_next_state = choose_best(t)
+                best_next_action = best_next_state.origin_action
+
+                # self.queue.put(random.choice(t.state.actions()))
+                self.queue.put(best_next_action)
+
+
+        def select(t):
+            if t.state.terminal_test():
+                return t
+
+            if len(t.children) > 0:
+                best_child = max(t.children, key=lambda x: x.uct)
+                return select(best_child)
+
+            else:
+                t.init_children()
+                random_child = random.choice(t.children)
+                return random_child
+          
+
+
+        def simulate(state):
+            if state.terminal_test():
+                return state.utility(self.player_id)
+            else:
+                return simulate(state.result(random.choice(state.actions())))        
+
+
+        def backpropagate(result, leaf):
+            leaf.sim_count += 1
+
+            if leaf.state.player() == self.player_id:
+                if result > 0:
+                    leaf.win_count += 1
+
+            
+            if leaf.parent == None:
+                return
+            else: leaf.uct = uct(leaf)
+
+            return backpropagate(result, leaf.parent)
+        
+
+        def uct(state):
+            if state.sim_count < 1:
+                return float("inf")
+            
+            if state.parent.sim_count < 1:
+                return 0
+  
+            else:
+                log_n = math.log(state.parent.sim_count)
+                return (state.win_count / state.sim_count) + (self.exploration_weight * math.sqrt(log_n / state.sim_count))
+        
+        def choose_best(state):
+            return max(state.children, key=lambda x: x.sim_count)
+
+        return run_search()
+
+
+
+
+
+
+
+
+
+
+
+
+    def select(self, leaf, parent):  # Leaf is a state
         leaf.parent = parent
 
         if leaf.terminal_test():
             return leaf
 
-        if hasattr(leaf,'children') and len(leaf.children) > 0:
+        if hasattr(leaf, 'children') and len(leaf.children) > 0:
             self.calc_children_ucts(leaf)
             return self.select(max(leaf.children, key=lambda x: x.uct), leaf)
 
@@ -416,18 +465,22 @@ class CustomPlayer(DataPlayer):
             return self.simulate(leaf.result(random.choice(leaf.actions())))
 
     def choose_best(self, state):
-        return max(state.children, key=lambda x: x.sim_count )
+        return max(state.children, key=lambda x: x.sim_count)
 
     def backpropagate(self, result, leaf):
-        if hasattr(leaf,'sim_count'): leaf.sim_count += 1
-        else: leaf.sim_count = 1
+        if hasattr(leaf, 'sim_count'):
+            leaf.sim_count += 1
+        else:
+            leaf.sim_count = 1
 
         if leaf.player() == self.player_id:
-            if math.isinf(result) and result > 0:
-                if hasattr(leaf, 'win_count'): leaf.win_count += 1
-                else:  leaf.win_count = 1
-        
-        if leaf.parent == None: 
+            if result > 0:
+                if hasattr(leaf, 'win_count'):
+                    leaf.win_count += 1
+                else:
+                    leaf.win_count = 1
+
+        if leaf.parent == None:
             return None
 
         self.backpropagate(result, leaf.parent)
@@ -437,7 +490,8 @@ class CustomPlayer(DataPlayer):
             child.uct = self.uct(child)
 
     def uct(self, state):
-        if state.sim_count == 0: return 0
+        if state.sim_count == 0:
+            return 0
         else:
             log_n = math.log(state.parent.sim_count)
             return (state.win_count / state.sim_count) + (self.exploration_weight * math.sqrt(log_n / state.sim_count))
