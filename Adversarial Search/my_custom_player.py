@@ -7,9 +7,12 @@ import random
 import time
 import math
 
+# import pickle
+
 _WIDTH = 11
 _HEIGHT = 9
 _BOARDSIZE = _WIDTH * _HEIGHT
+
 
 
 class CustomPlayer2(DataPlayer):
@@ -328,11 +331,15 @@ class TreeNode():
         self.origin_action = origin_action
         self.player_layer = player_layer
 
+        self.simulation_num = 0
+
     def __str__(self):
         return "My State is: " + str(self.state) + " \n \t children are: " + str(len(self.children)) + " \n \t UCT: " + str(self.uct)
 
     def init_children(self):
         self.children = [TreeNode(self.state.result(x), self, x, abs(self.player_layer - 1)) for x in self.state.actions()]
+
+
 
 
 class CustomPlayer(DataPlayer):
@@ -348,19 +355,19 @@ class CustomPlayer(DataPlayer):
 
         ## For Debugging ##
 
-        print('In get_action(), state received:')
-        debug_board = DebugState.from_state(state)
-        print(debug_board)
+        # print('In get_action(), state received:')
+        # debug_board = DebugState.from_state(state)
+        # print(debug_board)
 
         ## Monte Carlo ##
+        prev_tree = None
+        if hasattr(self, 'context'): prev_tree = self.context
+            # if hasattr(self.context, 'tree'): 
+        self.montecarlo(state, prev_tree)
 
-        self.montecarlo(state)
-
-    def montecarlo(self, state):
+    def montecarlo(self, state, prev_tree):
         
-        def run_search():
-            t = TreeNode(state, None, None, abs(self.player_id - 1))
-            t.init_children()
+        def run_search(t):
 
             for _ in range(self.iteration_limit):
                 leaf = select(t)
@@ -369,8 +376,12 @@ class CustomPlayer(DataPlayer):
                     result = simulate(leaf.state)
                     backpropagate(result, leaf)
                     calc_ucts(leaf)
+                    t.simulation_num += 1
 
                 best_next_state = choose_best(t)
+                # print(best_next_state.sim_count)
+
+                self.context = t
                 self.queue.put(best_next_state.origin_action)
 
                 # self.queue.put(random.choice(t.state.actions()))
@@ -421,31 +432,42 @@ class CustomPlayer(DataPlayer):
 
 
         def uct(state):
-            # exploit_term = 0
-            # explore_term = 0
-
-            # if state.sim_count < 1: exploit_term = float("inf")
-            # else: exploit_term = (state.win_count / state.sim_count)
-
-            # if state.parent.sim_count < 1: explore_term = 0
-            # else: 
-            #     log_n = math.log(state.parent.sim_count) 
-            #     explore_term = self.exploration_weight * math.sqrt(log_n / state.sim_count)
-
-            # return exploit_term + explore_term
-            
-            exploit_term = (state.win_count / state.sim_count)
             log_n = math.log(state.parent.sim_count) 
             explore_term = self.exploration_weight * math.sqrt(log_n / state.sim_count)
+            exploit_term = (state.win_count / state.sim_count)
 
             return exploit_term + explore_term
-
-
 
         def choose_best(state):
             return max(state.children, key=lambda x: x.sim_count)
 
-        return run_search()
+        def find_node(prev_tree):
+            # print("Processing Tree")
+            print("Last Simulation Num, ", prev_tree.simulation_num)
+            print("s: ",state)
+            for player_child in prev_tree.children:
+                for opponent_child in player_child.children:
+                    if opponent_child.state.locs == state.locs:
+                        print("Found the node!")
+                        return opponent_child
+
+        def create_tree():
+            new_tree = TreeNode(state, None, None, abs(self.player_id - 1))
+            new_tree.init_children()
+            return new_tree
+        
+        def process_tree(prev_tree):
+            t = None
+            if prev_tree is not None:  t = find_node(prev_tree)
+            else: t = create_tree()
+
+            if t is None: 
+                print("Didn't find node!")
+                t = create_tree()
+            
+            return t
+
+        return run_search(process_tree(prev_tree))
 
 
 
@@ -457,7 +479,9 @@ class CustomPlayer(DataPlayer):
 
 
     ### SOLUTION that uses Isolation() class ### 
-    ## This solution 
+    ## This solution appends values to the Isolation() class, the state object
+    ## that is passed to get_action(). This solution might have errors, as
+    ## I have changed the approach before fully debugging this.
 
     # def select(self, leaf, parent):  # Leaf is a state
     #     leaf.parent = parent
