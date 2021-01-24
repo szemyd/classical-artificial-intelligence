@@ -13,3 +13,4 @@ Alpha-Beta Search,liberty_difference,47.5%,120,Alpha-Beta Search,liberty_differe
 Alpha-Beta Search,weighted_linear_function,44.2%,120,Alpha-Beta Search,liberty_difference,5,true,10
 Alpha-Beta Search,weighted_binary,56.7%,120,Alpha-Beta Search,liberty_difference,5,true,10
 Alpha-Beta Search,weighted_relu,50.8%,120,Alpha-Beta Search,liberty_difference,5,true,10
+Monte Carlo Tree Search,-,80.0%,10,Random Agent,-,-,false,1
