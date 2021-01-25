@@ -12,6 +12,9 @@ from isolation import DebugState
 
 logger = logging.getLogger(__name__)
 
+def writeToCsv(myCsvRow):
+    with open('depth_diagnostics.csv', 'a') as fd:
+        fd.write(myCsvRow)
 
 class BasePlayer:
     def __init__(self, player_id):
@@ -171,8 +174,8 @@ class CustomOpponent:
         self.player_id = player_id
         self.start_time = None
         self.max_time = 140  # in miliseconds
-        self.depth_limit = 5
-        self.timertest_off = True
+        self.depth_limit = 99
+        self.timertest_off = False
 
         self.my_moves_prev = 0
         self.opp_moves_prev = 0
@@ -212,9 +215,14 @@ class CustomOpponent:
         # With iterative deepening
         # for depth in range(1, self.depth_limit + 1):
         #   self.queue.put(self.minimax(state, depth))
-
+        self.start_time = time.time()
         # With iterative deepening & Alpha-Beta Pruning
         for depth in range(1, self.depth_limit + 1):
+            if self.timertest():
+                writeToCsv(
+                    'Opponent (player: Weighted Self)' + 
+                    "," + str(depth)+ 
+                    '\n')
             self.queue.put(self.alpha_beta_search(state, depth))
 
         # Without iterative deepening

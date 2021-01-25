@@ -1,21 +1,27 @@
-search type,heuristic,win ratio,number of rounds,opponent,opponent heuristic,search depth,fair,parallel,time
-Alpha-Beta Search,movesDelta,55%,20,Alpha-Beta Search,my_moves,5,false,1,150
-Alpha-Beta Search,movesDelta,0%,20,Alpha-Beta Search,liberty_difference,4,false,1,150
-Alpha-Beta Search,liberty_difference,66.7%,6,Alpha-Beta Search,liberty_difference,4,false,1,150
-Alpha-Beta Search,liberty_difference,33.3%,6,Alpha-Beta Search,liberty_difference,4,false,1,150
-Alpha-Beta Search,liberty_difference,45.0%,20,Alpha-Beta Search,liberty_difference,4,false,1,150
-Alpha-Beta Search,weighted_self,50%,6,Alpha-Beta Search,liberty_difference,4,false,1,150
-Alpha-Beta Search,weighted_self,95%,20,Alpha-Beta Search,liberty_difference,5,false,1,150
-Alpha-Beta Search,weighted_self,70%,40,Alpha-Beta Search,liberty_difference,5,true,4,150
-Alpha-Beta Search,weighted_self,40.8%,120,Alpha-Beta Search,liberty_difference,5,true,10,150
-Alpha-Beta Search,weighted_opp,42.5%,120,Alpha-Beta Search,liberty_difference,5,true,10,150
-Alpha-Beta Search,liberty_difference,47.5%,120,Alpha-Beta Search,liberty_difference,5,true,10,150
-Alpha-Beta Search,weighted_linear_function,44.2%,120,Alpha-Beta Search,liberty_difference,5,true,10,150
-Alpha-Beta Search,weighted_binary,56.7%,120,Alpha-Beta Search,liberty_difference,5,true,10,150
-Alpha-Beta Search,weighted_relu,50.8%,120,Alpha-Beta Search,liberty_difference,5,true,10,150
-Monte Carlo Tree Search,-,80.0%,10,Random Agent,-,-,false,1,1000
-Monte Carlo Tree Search,-,60.0%,10,Random Agent,-,-,false,8,250
-Monte Carlo Tree Search,-,10.0%,10,Random Agent,-,-,false,8,500
-Monte Carlo Tree Search,-,60.0%,10,Random Agent,-,-,false,8,500
-Monte Carlo Tree Search,-,50.0%,10,Random Agent,-,-,false,8,500
-Monte Carlo Tree Search,-,0.0%,10,Random Agent,-,-,false,8,500
+search type,heuristic,win ratio,avg. search depth player,opponent,opponent heuristic,avg. search depth opponent,fair,parallel,time,number of rounds
+Alpha-Beta Search,movesDelta,55.00%,5.00,Alpha-Beta Search,my_moves,5.00,FALSE,1,150,20
+Alpha-Beta Search,movesDelta,0.00%,4.00,Alpha-Beta Search,liberty_difference,4.00,FALSE,1,150,20
+Alpha-Beta Search,liberty_difference,66.70%,4.00,Alpha-Beta Search,liberty_difference,4.00,FALSE,1,150,6
+Alpha-Beta Search,liberty_difference,33.30%,4.00,Alpha-Beta Search,liberty_difference,4.00,FALSE,1,150,6
+Alpha-Beta Search,liberty_difference,45.00%,4.00,Alpha-Beta Search,liberty_difference,4.00,FALSE,1,150,20
+Alpha-Beta Search,weighted_self,50.00%,4.00,Alpha-Beta Search,liberty_difference,4.00,FALSE,1,150,6
+Alpha-Beta Search,weighted_self,95.00%,5.00,Alpha-Beta Search,liberty_difference,5.00,FALSE,1,150,20
+Alpha-Beta Search,weighted_self,70.00%,5.00,Alpha-Beta Search,liberty_difference,5.00,TRUE,4,150,40
+Alpha-Beta Search,weighted_self,40.80%,5.00,Alpha-Beta Search,liberty_difference,5.00,TRUE,10,150,120
+Alpha-Beta Search,weighted_opp,42.50%,5.00,Alpha-Beta Search,liberty_difference,5.00,TRUE,10,150,120
+Alpha-Beta Search,liberty_difference,47.50%,5.00,Alpha-Beta Search,liberty_difference,5.00,TRUE,10,150,120
+Alpha-Beta Search,weighted_linear_function,44.20%,5.00,Alpha-Beta Search,liberty_difference,5.00,TRUE,10,150,120
+Alpha-Beta Search,weighted_binary,56.70%,5.00,Alpha-Beta Search,liberty_difference,5.00,TRUE,10,150,120
+Alpha-Beta Search,weighted_relu,50.80%,5.00,Alpha-Beta Search,liberty_difference,5.00,TRUE,10,150,120
+Monte Carlo Tree Search,-,80.00%,-,Random Agent,-,-,FALSE,1,1000,10
+Monte Carlo Tree Search,-,60.00%,-,Random Agent,-,-,FALSE,8,250,10
+Monte Carlo Tree Search,-,10.00%,-,Random Agent,-,-,FALSE,8,500,10
+Monte Carlo Tree Search,-,60.00%,-,Random Agent,-,-,FALSE,8,500,10
+Monte Carlo Tree Search,-,50.00%,-,Random Agent,-,-,FALSE,8,500,10
+Monte Carlo Tree Search,-,0.00%,-,Random Agent,-,-,FALSE,8,500,10
+Alpha-Beta Search,liberty_difference,44.20%,25.10,Alpha-Beta Search,liberty_difference,23.99,TRUE,10,150,120
+Alpha-Beta Search,weighted_relu,39.20%,26.77,Alpha-Beta Search,liberty_difference,27.00,TRUE,10,150,120
+Alpha-Beta Search,weighted_binary,60.00%,26.37,Alpha-Beta Search,liberty_difference,26.59,TRUE,10,150,120
+Alpha-Beta Search,weighted_linear_function,51.70%,27.54,Alpha-Beta Search,liberty_difference,27.89,TRUE,10,150,120
+Alpha-Beta Search,weighted_opp,50.80%,25.23,Alpha-Beta Search,liberty_difference,26.13,TRUE,10,150,120
+Alpha-Beta Search,weighted_self,45.80%,25.57,Alpha-Beta Search,liberty_difference,25.96,TRUE,10,150,120

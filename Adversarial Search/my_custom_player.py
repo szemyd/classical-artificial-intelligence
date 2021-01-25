@@ -13,9 +13,11 @@ _WIDTH = 11
 _HEIGHT = 9
 _BOARDSIZE = _WIDTH * _HEIGHT
 
+def writeToCsv(myCsvRow):
+    with open('depth_diagnostics.csv', 'a') as fd:
+        fd.write(myCsvRow)
 
-
-class CustomPlayer2(DataPlayer):
+class CustomPlayer(DataPlayer):
     """ Implement your own agent to play knight's Isolation
 
     The get_action() method is the only required method for this project.
@@ -37,8 +39,8 @@ class CustomPlayer2(DataPlayer):
         self.player_id = player_id
         self.start_time = None
         self.max_time = 140  # in miliseconds
-        self.depth_limit = 5
-        self.timertest_off = True
+        self.depth_limit = _BOARDSIZE
+        self.timertest_off = False
 
         self.my_moves_prev = 0
         self.opp_moves_prev = 0
@@ -79,10 +81,17 @@ class CustomPlayer2(DataPlayer):
         # With iterative deepening
         # for depth in range(1, self.depth_limit + 1):
         #   self.queue.put(self.minimax(state, depth))
-
+        # self.start_time = time.time()
         # With iterative deepening & Alpha-Beta Pruning
         for depth in range(1, self.depth_limit + 1):
-            self.queue.put(self.alpha_beta_search(state, depth))
+            # if self.timertest():
+                # print("\t", depth)
+                # writeToCsv(
+                #         'Player Weighted Self' + 
+                #     "," + str(depth)+ 
+                #     '\n')
+            if len(state.actions()) > 0: 
+                self.queue.put(self.alpha_beta_search(state, depth))
 
         # Without iterative deepening
         # self.queue.put(self.minimax(state, self.depth_limit))
@@ -99,9 +108,8 @@ class CustomPlayer2(DataPlayer):
 
         best_move = None
         for depth in range(1, depth_limit + 1):
-            # print("==========")
-            # print("DEPTH = ", depth)
             if self.timertest():
+                print("max DEPTH = ", depth)
                 return best_move
             best_move = self.minimax(state, depth)
 
@@ -237,7 +245,7 @@ class CustomPlayer2(DataPlayer):
     ## HEURISTICS ##
 
     def score(self, state, player):
-        return self.weighted_relu(state, player)
+        return self.weighted_binary(state, player)
 
     def liberty_difference(self, state, player):
         own_loc = state.locs[player]
@@ -362,7 +370,7 @@ class TreeNode():
 
 
 
-class CustomPlayer(DataPlayer):
+class MonteCarloPlayer(DataPlayer):
 
     def __init__(self, player_id):
         self.player_id = player_id
