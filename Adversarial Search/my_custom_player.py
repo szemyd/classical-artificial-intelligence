@@ -329,13 +329,13 @@ class TreeNode():
         self.children = []
         
         self.uct = 0
-        self.win_count = 0
-        self.sim_count = 1
+        self.win_count = 2
+        self.sim_count = 2
 
         self.origin_action = origin_action
         self.player_layer = player_layer
 
-        self.max_depth = 5
+        self.max_depth = 1
 
         # self.simulation_num = 0
 
@@ -351,7 +351,7 @@ class TreeNode():
             spaces += '\t'
         
         print(spaces + str(self.win_count) + '/' + str(self.sim_count))
-        print(spaces + '[ ' + str(round(self.uct, 2)) + ' ]')
+        print(spaces + '[ ' + str(round(self.uct, 4)) + ' ]')
        
         if len(self.children) < 1 or depth > self.max_depth: 
             return
@@ -366,11 +366,12 @@ class CustomPlayer(DataPlayer):
 
     def __init__(self, player_id):
         self.player_id = player_id
-        self.max_time = 140  # in miliseconds
-        self.iteration_limit = 1
+        self.max_time = 240  # in miliseconds
+        self.iteration_limit = 10000
         self.exploration_weight = math.sqrt(2)  # usually it is sqrt of 2
         self.start_time = 0
-        self.max_time = 125
+
+        print("Player ID: ", self.player_id)
 
     def timertest(self):
         if (time.time() - self.start_time) * 1000 > self.max_time:
@@ -380,58 +381,57 @@ class CustomPlayer(DataPlayer):
 
     def get_action(self, state):
 
-        ## For Debugging ##
-        if(state.terminal_test()):
-            print('In get_action(), state received:')
-            debug_board = DebugState.from_state(state)
-            print(debug_board)
+        prev_tree = TreeNode(state, None, None, abs(self.player_id - 1))
 
-        ## Monte Carlo ##
-        # print("OPP  \tME  \tOPP  ")
-        self.start_time = time.time()
-        
-        prev_tree = None
-        if hasattr(self, 'context'): 
-            prev_tree = self.context
-            print(prev_tree.visualize(0))
+        if state.ply_count < 2:
+            self.queue.put(random.choice(state.actions()))
+        else: 
+            for _ in range(self.iteration_limit):
+                best_state = self.montecarlo(state, prev_tree)
 
-        self.montecarlo(state, prev_tree)
+                if hasattr(best_state,'origin_action'): self.queue.put(best_state.origin_action)
+                else: self.queue.put(random.choice(state.actions()))
+
 
     def montecarlo(self, state, prev_tree):
         
         def run_search(t):
 
-            # for _ in range(self.iteration_limit):
-            while True:
-                leaf = select(t)
+            leaf = select(t)
+            if leaf is False:
+                return None
 
-                if(leaf != state): 
-                    result = simulate(leaf.state)
-                    backpropagate(result, leaf)
-                    calc_ucts(leaf)
-                    # if self.timertest(): 
-                    # t.visualize(0)
-                    # t.simulation_num += 1
+            result = simulate(leaf.state)
+            backpropagate(result, leaf)
 
-                best_next_state = choose_best(t)
-                # print(best_next_state.sim_count)
+            best_next_state = choose_best(t)
 
-                self.context = best_next_state
-                self.queue.put(best_next_state.origin_action)
+            # print(best_next_state.origin_action)
+            # if self.timertest(): 
+            # # if visualize: 
+            #     t.visualize(0)
+                # print(best_next_state.origin_action)
+            # self.context = best_next_state
 
-                # self.queue.put(random.choice(t.state.actions()))
+            return best_next_state
+
+
 
         def select(t):
             if t.state.terminal_test():
-                return t
+                return False
 
             if len(t.children) > 0:
+                if t.parent: t.uct = uct(t)
+                for child in t.children:
+                    child.uct = uct(child)
                 best_child = max(t.children, key=lambda x: x.uct)
                 return select(best_child)
 
             else:
                 t.init_children()
                 random_child = random.choice(t.children)
+                random_child.uct = uct(random_child)
                 return random_child
           
 
@@ -447,7 +447,6 @@ class CustomPlayer(DataPlayer):
 
             conv_result = 0
             if result > 0: conv_result = 1
-            # elif result < 0: result: -1
 
             if result == 0: leaf.win_count += 1
             elif leaf.state.player() == self.player_id:
@@ -458,16 +457,9 @@ class CustomPlayer(DataPlayer):
                 return
             else: return backpropagate(result, leaf.parent)
         
-        def calc_ucts(leaf):
-            if leaf.parent == None:
-                return
-            else: 
-                leaf.uct = uct(leaf)
-                calc_ucts(leaf.parent)
-
 
         def uct(state):
-            log_n = math.log(state.parent.sim_count) 
+            log_n = math.log(state.parent.sim_count, 10) 
             explore_term = self.exploration_weight * math.sqrt(log_n / state.sim_count)
             exploit_term = (state.win_count / state.sim_count)
 
@@ -477,18 +469,8 @@ class CustomPlayer(DataPlayer):
             return max(state.children, key=lambda x: x.sim_count)
 
         def find_node(prev_tree):
-            # print("Processing Tree")
-            # print("Last Simulation Num, ", prev_tree.simulation_num)
-            # print("s: ",state)
-            # for player_child in prev_tree.children:
-            #     for opponent_child in player_child.children:
-            #         if opponent_child.state.locs == state.locs:
-            #             print("Found the node!")
-            #             return opponent_child
-
             for opponent_child in prev_tree.children:
                 if opponent_child.state.locs == state.locs:
-                    # print("Found the node!")
                     return opponent_child
 
         def create_tree():
@@ -505,12 +487,28 @@ class CustomPlayer(DataPlayer):
             
             return t
 
-        return run_search(process_tree(prev_tree))
+        # return run_search(process_tree(prev_tree))
+        return run_search(prev_tree)
 
 
 
 
 
+        # def calc_ucts(leaf):
+        #     if leaf.parent == None:
+        #         return
+        #     else: 
+        #         leaf.uct = uct(leaf)
+        #         calc_ucts(leaf.parent)
+
+        # def calc_ucts_top_down(leaf):
+        #     if len(leaf.children) < 1:
+        #         return
+        #     else:
+        #         if leaf.parent: 
+        #             leaf.uct = uct(leaf)
+        #         for child in leaf.children:
+        #             calc_ucts_top_down(child)
 
 
 

@@ -8,6 +8,7 @@ import random
 import time
 import math
 
+from isolation import DebugState
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +50,13 @@ class RandomPlayer(BasePlayer):
             An instance of `isolation.Isolation` encoding the current state of the
             game (e.g., player locations and blocked cells)
         """
+        # print("OPP state, ", state)
+        # debug_board = DebugState.from_state(state)
+        # print(debug_board)
+        # print("my loc: ",state.locs[self.player_id%2])
+        
+
+
         self.queue.put(random.choice(state.actions()))
 
 
