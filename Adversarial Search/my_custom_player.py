@@ -7,10 +7,15 @@ import random
 import time
 import math
 
+# import pickle
+
 _WIDTH = 11
 _HEIGHT = 9
-_BOARDSIZE= _WIDTH * _HEIGHT
+_BOARDSIZE = _WIDTH * _HEIGHT
 
+def writeToCsv(myCsvRow):
+    with open('depth_diagnostics.csv', 'a') as fd:
+        fd.write(myCsvRow)
 
 class CustomPlayer(DataPlayer):
     """ Implement your own agent to play knight's Isolation
@@ -34,8 +39,8 @@ class CustomPlayer(DataPlayer):
         self.player_id = player_id
         self.start_time = None
         self.max_time = 140  # in miliseconds
-        self.depth_limit = 5
-        self.timertest_off = True
+        self.depth_limit = _BOARDSIZE
+        self.timertest_off = False
 
         self.my_moves_prev = 0
         self.opp_moves_prev = 0
@@ -76,10 +81,17 @@ class CustomPlayer(DataPlayer):
         # With iterative deepening
         # for depth in range(1, self.depth_limit + 1):
         #   self.queue.put(self.minimax(state, depth))
-
+        # self.start_time = time.time()
         # With iterative deepening & Alpha-Beta Pruning
         for depth in range(1, self.depth_limit + 1):
-            self.queue.put(self.alpha_beta_search(state, depth))
+            # if self.timertest():
+                # print("\t", depth)
+                # writeToCsv(
+                #         'Player Weighted Self' + 
+                #     "," + str(depth)+ 
+                #     '\n')
+            if len(state.actions()) > 0: 
+                self.queue.put(self.alpha_beta_search(state, depth))
 
         # Without iterative deepening
         # self.queue.put(self.minimax(state, self.depth_limit))
@@ -96,9 +108,8 @@ class CustomPlayer(DataPlayer):
 
         best_move = None
         for depth in range(1, depth_limit + 1):
-            # print("==========")
-            # print("DEPTH = ", depth)
             if self.timertest():
+                print("max DEPTH = ", depth)
                 return best_move
             best_move = self.minimax(state, depth)
 
@@ -234,7 +245,7 @@ class CustomPlayer(DataPlayer):
     ## HEURISTICS ##
 
     def score(self, state, player):
-        return self.weighted_relu(state, player)
+        return self.weighted_binary(state, player)
 
     def liberty_difference(self, state, player):
         own_loc = state.locs[player]
@@ -291,16 +302,17 @@ class CustomPlayer(DataPlayer):
         progress = state.ply_count/_BOARDSIZE
 
         w1, w2 = progress, 1 - progress
- 
-        return w1 * self.weighted_self(state, player) + w2 * self.weighted_opp(state, player) 
+
+        return w1 * self.weighted_self(state, player) + w2 * self.weighted_opp(state, player)
 
     def weighted_relu(self, state, player):
 
         # this goes from 0 -> as 1 as the game progresses
         progress = state.ply_count/_BOARDSIZE
 
-        w1, w2 = self.rectified((progress * 2) - 1 ), self.rectified(1 - (progress * 4)) 
- 
+        w1, w2 = self.rectified(
+            (progress * 2) - 1), self.rectified(1 - (progress * 4))
+
         return w1 * self.weighted_self(state, player) + w2 * self.weighted_opp(state, player) + self.num_moves(state, player)
 
     def weighted_binary(self, state, player):
@@ -308,7 +320,266 @@ class CustomPlayer(DataPlayer):
         # this goes from 0 -> as 1 as the game progresses
         progress = state.ply_count/_BOARDSIZE
 
-        return self.weighted_opp(state, player) if progress <= 0.5 else self.weighted_self(state,player)
+        return self.weighted_opp(state, player) if progress <= 0.5 else self.weighted_self(state, player)
 
     def rectified(self, num):
         return max(0.0, num)
+
+branch = '├'
+pipe = '|'
+end = '└'
+dash = '─'
+
+class TreeNode():
+    def __init__(self, state, parent, origin_action, player_layer):
+        self.parent = parent 
+        self.state = state
+        self.children = []
+        
+        self.uct = 0
+        self.win_count = 2
+        self.sim_count = 2
+
+        self.origin_action = origin_action
+        self.player_layer = player_layer
+
+        self.max_depth = 1
+
+        # self.simulation_num = 0
+
+    def __str__(self):
+        return "My State is: " + str(self.state) + " \n \t children are: " + str(len(self.children)) + " \n \t UCT: " + str(self.uct)
+
+    def init_children(self):
+        self.children = [TreeNode(self.state.result(x), self, x, abs(self.player_layer - 1)) for x in self.state.actions()]
+
+    def visualize(self, depth):
+        spaces = ''
+        for _ in range(depth):
+            spaces += '\t'
+        
+        print(spaces + str(self.win_count) + '/' + str(self.sim_count))
+        print(spaces + '[ ' + str(round(self.uct, 4)) + ' ]')
+       
+        if len(self.children) < 1 or depth > self.max_depth: 
+            return
+            
+        else: 
+            for child in self.children:
+                child.visualize(depth + 1)
+
+
+
+class MonteCarloPlayer(DataPlayer):
+
+    def __init__(self, player_id):
+        self.player_id = player_id
+        self.max_time = 240  # in miliseconds
+        self.iteration_limit = 10000
+        self.exploration_weight = math.sqrt(2)  # usually it is sqrt of 2
+        self.start_time = 0
+
+        print("Player ID: ", self.player_id)
+
+    def timertest(self):
+        if (time.time() - self.start_time) * 1000 > self.max_time:
+            return True  # in milliseconds
+        else:
+            return False
+
+    def get_action(self, state):
+
+        prev_tree = TreeNode(state, None, None, abs(self.player_id - 1))
+
+        if state.ply_count < 2:
+            self.queue.put(random.choice(state.actions()))
+        else: 
+            for _ in range(self.iteration_limit):
+                best_state = self.montecarlo(state, prev_tree)
+
+                if hasattr(best_state,'origin_action'): self.queue.put(best_state.origin_action)
+                else: self.queue.put(random.choice(state.actions()))
+
+
+    def montecarlo(self, state, prev_tree):
+        
+        def run_search(t):
+
+            leaf = select(t)
+            if leaf is False:
+                return None
+
+            result = simulate(leaf.state)
+            backpropagate(result, leaf)
+
+            best_next_state = choose_best(t)
+
+            # print(best_next_state.origin_action)
+            # if self.timertest(): 
+            # # if visualize: 
+            #     t.visualize(0)
+                # print(best_next_state.origin_action)
+            # self.context = best_next_state
+
+            return best_next_state
+
+
+
+        def select(t):
+            if t.state.terminal_test():
+                return False
+
+            if len(t.children) > 0:
+                if t.parent: t.uct = uct(t)
+                for child in t.children:
+                    child.uct = uct(child)
+                best_child = max(t.children, key=lambda x: x.uct)
+                return select(best_child)
+
+            else:
+                t.init_children()
+                random_child = random.choice(t.children)
+                random_child.uct = uct(random_child)
+                return random_child
+          
+
+        def simulate(state):
+            if state.terminal_test():
+                return state.utility(self.player_id)
+            else:
+                return simulate(state.result(random.choice(state.actions())))        
+
+
+        def backpropagate(result, leaf):
+            leaf.sim_count += 1
+
+            conv_result = 0
+            if result > 0: conv_result = 1
+
+            if result == 0: leaf.win_count += 1
+            elif leaf.state.player() == self.player_id:
+                    leaf.win_count += conv_result
+            else: leaf.win_count += 1 - conv_result
+
+            if leaf.parent == None:
+                return
+            else: return backpropagate(result, leaf.parent)
+        
+
+        def uct(state):
+            log_n = math.log(state.parent.sim_count, 10) 
+            explore_term = self.exploration_weight * math.sqrt(log_n / state.sim_count)
+            exploit_term = (state.win_count / state.sim_count)
+
+            return exploit_term + explore_term
+
+        def choose_best(state):
+            return max(state.children, key=lambda x: x.sim_count)
+
+        def find_node(prev_tree):
+            for opponent_child in prev_tree.children:
+                if opponent_child.state.locs == state.locs:
+                    return opponent_child
+
+        def create_tree():
+            return TreeNode(state, None, None, abs(self.player_id - 1))
+        
+        def process_tree(prev_tree):
+            t = None
+            if prev_tree is not None:  t = find_node(prev_tree)
+            else: t = create_tree()
+
+            if t is None: 
+                # print("Didn't find node!")
+                t = create_tree()
+            
+            return t
+
+        # return run_search(process_tree(prev_tree))
+        return run_search(prev_tree)
+
+
+
+
+
+        # def calc_ucts(leaf):
+        #     if leaf.parent == None:
+        #         return
+        #     else: 
+        #         leaf.uct = uct(leaf)
+        #         calc_ucts(leaf.parent)
+
+        # def calc_ucts_top_down(leaf):
+        #     if len(leaf.children) < 1:
+        #         return
+        #     else:
+        #         if leaf.parent: 
+        #             leaf.uct = uct(leaf)
+        #         for child in leaf.children:
+        #             calc_ucts_top_down(child)
+
+
+
+
+
+    ### SOLUTION that uses Isolation() class ### 
+    ## This solution appends values to the Isolation() class, the state object
+    ## that is passed to get_action(). This solution might have errors, as
+    ## I have changed the approach before fully debugging this.
+
+    # def select(self, leaf, parent):  # Leaf is a state
+    #     leaf.parent = parent
+
+    #     if leaf.terminal_test():
+    #         return leaf
+
+    #     if hasattr(leaf, 'children') and len(leaf.children) > 0:
+    #         self.calc_children_ucts(leaf)
+    #         return self.select(max(leaf.children, key=lambda x: x.uct), leaf)
+
+    #     else:
+    #         leaf.children = [leaf.result(state) for state in leaf.actions()]
+    #         for child in leaf.children:
+    #             child.sim_count = 0
+    #             child.win_count = 0
+    #         randomly_selected = random.choice(leaf.children)
+    #         randomly_selected.parent = leaf
+    #         return randomly_selected
+
+    # def simulate(self, leaf):
+    #     if leaf.terminal_test():
+    #         return leaf.utility(self.player_id)
+    #     else:
+    #         return self.simulate(leaf.result(random.choice(leaf.actions())))
+
+    # def choose_best(self, state):
+    #     return max(state.children, key=lambda x: x.sim_count)
+
+    # def backpropagate(self, result, leaf):
+    #     if hasattr(leaf, 'sim_count'):
+    #         leaf.sim_count += 1
+    #     else:
+    #         leaf.sim_count = 1
+
+    #     if leaf.player() == self.player_id:
+    #         if result > 0:
+    #             if hasattr(leaf, 'win_count'):
+    #                 leaf.win_count += 1
+    #             else:
+    #                 leaf.win_count = 1
+
+    #     if leaf.parent == None:
+    #         return None
+
+    #     self.backpropagate(result, leaf.parent)
+
+    # def calc_children_ucts(self, state):
+    #     for child in state.children:
+    #         child.uct = self.uct(child)
+
+    # def uct(self, state):
+    #     if state.sim_count == 0:
+    #         return 0
+    #     else:
+    #         log_n = math.log(state.parent.sim_count)
+    #         return (state.win_count / state.sim_count) + (self.exploration_weight * math.sqrt(log_n / state.sim_count))
