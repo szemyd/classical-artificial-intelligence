@@ -74,9 +74,9 @@ class CustomPlayer(DataPlayer):
 
         # For Debugging
 
-        # print('In get_action(), state received:')
-        # debug_board = DebugState.from_state(state)
-        # print(debug_board)
+        print('In get_action(), state received:')
+        debug_board = DebugState.from_state(state)
+        print(debug_board)
 
         # With iterative deepening
         # for depth in range(1, self.depth_limit + 1):
